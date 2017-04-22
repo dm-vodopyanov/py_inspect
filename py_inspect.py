@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\Dmitry\Desktop\PyInspect.ui'
-#
-# Created by: PyQt5 UI code generator 5.8.2
-#
-# WARNING! All changes made in this file will be lost!
-
+import sys
+import pywinauto
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(731, 600)
-        MainWindow.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
+
+class Window(object):
+    def setup(self, main_window):
+        main_window.setObjectName("MainWindow")
+        main_window.resize(731, 600)
+        main_window.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
+        self.centralwidget = QtWidgets.QWidget(main_window)
         self.centralwidget.setObjectName("centralwidget")
         self.treeView = QtWidgets.QTreeView(self.centralwidget)
         self.treeView.setGeometry(QtCore.QRect(10, 10, 351, 581))
@@ -21,41 +18,44 @@ class Ui_MainWindow(object):
         self.tableView = QtWidgets.QTableView(self.centralwidget)
         self.tableView.setGeometry(QtCore.QRect(370, 10, 351, 581))
         self.tableView.setObjectName("tableView")
-        MainWindow.setCentralWidget(self.centralwidget)
+        main_window.setCentralWidget(self.centralwidget)
 
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        self.retranslate(main_window)
+        QtCore.QMetaObject.connectSlotsByName(main_window)
 
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "PyInspect"))
+    def retranslate(self, main_window):
+        translate = QtCore.QCoreApplication.translate
+        main_window.setWindowTitle(translate("MainWindow", "PyInspect"))
 
     def make_tree(self):
         model = QtGui.QStandardItemModel()
-        rootNode = model.invisibleRootItem()
+        root_node = model.invisibleRootItem()
+
         branch1 = QtGui.QStandardItem("Branch 1")
-        branch1.appendRow([QtGui.QStandardItem("Child A"), None])
-        childnode = QtGui.QStandardItem("Child B")
-        branch1.appendRow([childnode, None])
+        branch1.appendRow(QtGui.QStandardItem("Child A"))
+        branch1.appendRow(QtGui.QStandardItem("Child B"))
 
         branch2 = QtGui.QStandardItem("Branch 2")
-        branch2.appendRow([QtGui.QStandardItem("Child C"), None])
-        branch2.appendRow([QtGui.QStandardItem("Child D"), None])
+        branch2.appendRow(QtGui.QStandardItem("Child C"))
+        branch2.appendRow(QtGui.QStandardItem("Child D"))
 
-        rootNode.appendRow([branch1, None])
-        rootNode.appendRow([branch2, None])
+        root_node.appendRow(branch1)
+        root_node.appendRow(branch2)
 
         self.treeView.setModel(model)
         self.treeView.setColumnWidth(0, 150)
 
+    def make_table(self):
+        pass
+
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
+    window = QtWidgets.QMainWindow()
+    ui = Window()
+    ui.setup(window)
     ui.make_tree()
-    MainWindow.show()
+    ui.make_table()
+    window.show()
     sys.exit(app.exec_())
 

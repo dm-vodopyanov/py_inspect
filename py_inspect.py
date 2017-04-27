@@ -1,61 +1,85 @@
 # -*- coding: utf-8 -*-
 
 import sys
+
 import pywinauto
-from PyQt5 import QtCore, QtGui, QtWidgets
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+
+my_array = [['AAA','BBB'],
+            ['CCC','DDD'],
+            ['EEE','FFF']]
+
+my_dict = {}
 
 
-class Window(object):
-    def setup(self, main_window):
-        main_window.setObjectName("MainWindow")
-        main_window.resize(731, 600)
-        main_window.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
-        self.centralwidget = QtWidgets.QWidget(main_window)
-        self.centralwidget.setObjectName("centralwidget")
-        self.treeView = QtWidgets.QTreeView(self.centralwidget)
-        self.treeView.setGeometry(QtCore.QRect(10, 10, 351, 581))
-        self.treeView.setObjectName("treeView")
-        self.tableView = QtWidgets.QTableView(self.centralwidget)
-        self.tableView.setGeometry(QtCore.QRect(370, 10, 351, 581))
-        self.tableView.setObjectName("tableView")
-        main_window.setCentralWidget(self.centralwidget)
+def main():
+    app = QApplication(sys.argv)
+    w = MyWindow()
+    w.show()
+    sys.exit(app.exec_())
 
-        self.retranslate(main_window)
-        QtCore.QMetaObject.connectSlotsByName(main_window)
 
-    def retranslate(self, main_window):
-        translate = QtCore.QCoreApplication.translate
-        main_window.setWindowTitle(translate("MainWindow", "PyInspect"))
+class MyWindow(QWidget):
+    def __init__(self, *args):
+        QWidget.__init__(self, *args)
 
-    def make_tree(self):
-        model = QtGui.QStandardItemModel()
-        root_node = model.invisibleRootItem()
+        self.resize(731, 600)
+        self.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+        self.setWindowTitle(QCoreApplication.translate("MainWindow", "PyInspect"))
 
-        branch1 = QtGui.QStandardItem("Branch 1")
-        branch1.appendRow(QtGui.QStandardItem("Child A"))
-        branch1.appendRow(QtGui.QStandardItem("Child B"))
+        self.central_widget = QWidget(self)
 
-        branch2 = QtGui.QStandardItem("Branch 2")
-        branch2.appendRow(QtGui.QStandardItem("Child C"))
-        branch2.appendRow(QtGui.QStandardItem("Child D"))
+        self.tree_view = QTreeView(self.central_widget)
+        self.tree_view.setGeometry(QRect(10, 10, 351, 581))
+        self.tree_view.setColumnWidth(0, 150)
+
+        tree_model = MyTreeModel()
+        self.tree_view.setModel(tree_model)
+
+        self.table_view = QTableView(self.central_widget)
+        self.table_view.setGeometry(QRect(370, 10, 351, 581))
+
+        table_model = MyTableModel(my_array, self)
+        self.table_view.setModel(table_model)
+
+
+class MyTreeModel(QStandardItemModel):
+    def __init__(self):
+        QStandardItemModel.__init__(self)
+        root_node = self.invisibleRootItem()
+
+        branch1 = QStandardItem("Branch 1")
+        branch1.appendRow(QStandardItem("Child A"))
+        branch1.appendRow(QStandardItem("Child B"))
+
+        branch2 = QStandardItem("Branch 2")
+        branch2.appendRow(QStandardItem("Child C"))
+        branch2.appendRow(QStandardItem("Child D"))
 
         root_node.appendRow(branch1)
         root_node.appendRow(branch2)
 
-        self.treeView.setModel(model)
-        self.treeView.setColumnWidth(0, 150)
 
-    def make_table(self):
-        pass
+class MyTableModel(QAbstractTableModel):
+    def __init__(self, datain, parent=None, *args):
+        QAbstractTableModel.__init__(self, parent, *args)
+        self.arraydata = datain
 
+    def rowCount(self, parent):
+        return len(self.arraydata)
+
+    def columnCount(self, parent):
+        return len(self.arraydata[0])
+
+    def data(self, index, role):
+        if not index.isValid():
+            return QVariant()
+        elif role != Qt.DisplayRole:
+            return QVariant()
+        return QVariant(self.arraydata[index.row()][index.column()])
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    window = QtWidgets.QMainWindow()
-    ui = Window()
-    ui.setup(window)
-    ui.make_tree()
-    ui.make_table()
-    window.show()
-    sys.exit(app.exec_())
-
+    main()

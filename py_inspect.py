@@ -2,17 +2,15 @@
 
 import sys
 
-import pywinauto
+from pywinauto import uia_element_info
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-my_array = [['AAA','BBB'],
-            ['CCC','DDD'],
-            ['EEE','FFF']]
-
-my_dict = {}
+my_array = [['AAA', 'BBB'],
+            ['CCC', 'DDD'],
+            ['EEE', 'FFF']]
 
 
 def main():
@@ -36,35 +34,41 @@ class MyWindow(QWidget):
         self.tree_view.setGeometry(QRect(10, 10, 351, 581))
         self.tree_view.setColumnWidth(0, 150)
 
-        tree_model = MyTreeModel()
+        self.element_info = uia_element_info.UIAElementInfo()
+
+        tree_model = MyTreeModel(self.element_info)
         self.tree_view.setModel(tree_model)
 
         self.table_view = QTableView(self.central_widget)
         self.table_view.setGeometry(QRect(370, 10, 351, 581))
 
-        table_model = MyTableModel(my_array, self)
+        table_model = MyTableModel(my_array, self.element_info, self)
         self.table_view.setModel(table_model)
 
 
 class MyTreeModel(QStandardItemModel):
-    def __init__(self):
+    def __init__(self, element_info):
         QStandardItemModel.__init__(self)
         root_node = self.invisibleRootItem()
 
-        branch1 = QStandardItem("Branch 1")
-        branch1.appendRow(QStandardItem("Child A"))
-        branch1.appendRow(QStandardItem("Child B"))
+        self.branch = QStandardItem(self.__node_name(element_info))
+        self.branch.setEditable(False)
+        root_node.appendRow(self.branch)
+        self.__get_next(element_info, self.branch)
 
-        branch2 = QStandardItem("Branch 2")
-        branch2.appendRow(QStandardItem("Child C"))
-        branch2.appendRow(QStandardItem("Child D"))
+    def __get_next(self, element_info, parent):
+        for child in element_info.children():
+            child_item = QStandardItem(self.__node_name(child))
+            child_item.setEditable(False)
+            parent.appendRow(child_item)
+            self.__get_next(child, child_item)
 
-        root_node.appendRow(branch1)
-        root_node.appendRow(branch2)
+    def __node_name(self, element_info):
+        return '%s_%s' % (str(element_info.name), str(element_info.handle))
 
 
 class MyTableModel(QAbstractTableModel):
-    def __init__(self, datain, parent=None, *args):
+    def __init__(self, datain, element_info, parent=None, *args):
         QAbstractTableModel.__init__(self, parent, *args)
         self.arraydata = datain
 

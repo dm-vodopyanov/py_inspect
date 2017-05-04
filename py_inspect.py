@@ -1,6 +1,8 @@
 import sys
 
 from pywinauto import uia_element_info
+from pywinauto import backend
+from pywinauto import win32_element_info
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -18,40 +20,59 @@ class MyWindow(QWidget):
     def __init__(self, *args):
         QWidget.__init__(self, *args)
 
-        self.resize(731, 600)
+        self.setFixedSize(930, 631)
         self.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
         self.setWindowTitle(QCoreApplication.translate("MainWindow", "PyInspect"))
 
         self.central_widget = QWidget(self)
 
+        self.comboBox = QComboBox(self.central_widget)
+        self.comboBox.setGeometry(QRect(10, 10, 451, 22))
+        self.comboBox.setMouseTracking(False)
+        self.comboBox.setMaxVisibleItems(5)
+        self.comboBox.setObjectName("comboBox")
+
+        for _backend in backend.registry.backends.keys():
+            self.comboBox.addItem(_backend)
+
         self.tree_view = QTreeView(self.central_widget)
-        self.tree_view.setGeometry(QRect(10, 10, 351, 581))
+        self.tree_view.setGeometry(QRect(10, 40, 451, 581))
         self.tree_view.setColumnWidth(0, 150)
 
-        self.element_info = uia_element_info.UIAElementInfo()
-
-        self.tree_model = MyTreeModel(self.element_info)
-        self.tree_model.setHeaderData(0, Qt.Horizontal, 'Controls')
-        self.tree_view.setModel(self.tree_model)
+        self.__initialize_calc()
 
         self.table_view = QTableView(self.central_widget)
-        self.table_view.setGeometry(QRect(370, 10, 351, 581))
+        self.table_view.setGeometry(QRect(470, 40, 451, 581))
 
+        self.comboBox.activated[str].connect(self.__show_tree)
+
+    def __initialize_calc(self, _backend='uia'):
+        self.element_info = backend.registry.backends[_backend].element_info_class()
+        self.tree_model = MyTreeModel(self.element_info, _backend)
+        self.tree_model.setHeaderData(0, Qt.Horizontal, 'Controls')
+        self.tree_view.setModel(self.tree_model)
         self.tree_view.clicked.connect(self.__show_property)
+
+    def __show_tree(self, text):
+        self.backend = text
+        self.__initialize_calc(self.backend)
 
     def __show_property(self, index=None):
         data = index.data()
         self.table_model = MyTableModel(self.tree_model.props_dict.get(data), self.element_info, self)
+        self.table_view.wordWrap()
         self.table_view.setModel(self.table_model)
+        self.table_view.setColumnWidth(1, 320)
 
 
 class MyTreeModel(QStandardItemModel):
-    def __init__(self, element_info):
+    def __init__(self, element_info, backend):
         QStandardItemModel.__init__(self)
         root_node = self.invisibleRootItem()
         self.props_dict = {}
         self.branch = QStandardItem(self.__node_name(element_info))
         self.branch.setEditable(False)
+        self.backend = backend
         root_node.appendRow(self.branch)
         self.__generate_props_dict(element_info)
         self.__get_next(element_info, self.branch)
@@ -69,22 +90,31 @@ class MyTreeModel(QStandardItemModel):
         return '%s_%s' % (str(element_info.name), id(element_info))
 
     def __generate_props_dict(self, element_info):
-        node_dict = {self.__node_name(element_info): [
-                                                        ['control_id', str(element_info.control_id)],
-                                                        ['class_name', str(element_info.class_name)],
-                                                        ['control_type', str(element_info.control_type)],
-                                                        ['element', str(element_info.element)],
-                                                        ['enabled', str(element_info.enabled)],
-                                                        ['framework_id', str(element_info.framework_id)],
-                                                        ['handle', str(element_info.handle)],
-                                                        ['name', str(element_info.name)],
-                                                        ['process_id', str(element_info.process_id)],
-                                                        ['rectangle', str(element_info.rectangle)],
-                                                        ['rich_text', str(element_info.rich_text)],
-                                                        ['parent', str(element_info.parent)],
-                                                        ['runtime_id', str(element_info.runtime_id)],
-                                                        ['visible', str(element_info.visible)],
-                                                     ]}
+        props = [
+                    ['control_id', str(element_info.control_id)],
+                    ['class_name', str(element_info.class_name)],
+                    ['enabled', str(element_info.enabled)],
+                    ['handle', str(element_info.handle)],
+                    ['name', str(element_info.name)],
+                    ['process_id', str(element_info.process_id)],
+                    ['rectangle', str(element_info.rectangle)],
+                    ['rich_text', str(element_info.rich_text)],
+                    ['visible', str(element_info.visible)]
+                ]
+
+        props_win32 = [
+                      ] if (self.backend == 'win32') else []
+
+        props_uia = [
+                        ['control_type', str(element_info.control_type)],
+                        ['element', str(element_info.element)],
+                        ['framework_id', str(element_info.framework_id)],
+                        ['runtime_id', str(element_info.runtime_id)]
+                    ] if (self.backend == 'uia') else []
+
+        props.extend(props_uia)
+        props.extend(props_win32)
+        node_dict = {self.__node_name(element_info): props}
         self.props_dict.update(node_dict)
 
 

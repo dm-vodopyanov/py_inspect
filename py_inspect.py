@@ -1,8 +1,6 @@
 import sys
 
-from pywinauto import uia_element_info
 from pywinauto import backend
-from pywinauto import win32_element_info
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -39,6 +37,7 @@ class MyWindow(QWidget):
         self.tree_view.setGeometry(QRect(10, 40, 451, 581))
         self.tree_view.setColumnWidth(0, 150)
 
+        self.comboBox.setCurrentText('uia')
         self.__initialize_calc()
 
         self.table_view = QTableView(self.central_widget)
@@ -54,12 +53,12 @@ class MyWindow(QWidget):
         self.tree_view.clicked.connect(self.__show_property)
 
     def __show_tree(self, text):
-        self.backend = text
-        self.__initialize_calc(self.backend)
+        backend = text
+        self.__initialize_calc(backend)
 
     def __show_property(self, index=None):
         data = index.data()
-        self.table_model = MyTableModel(self.tree_model.props_dict.get(data), self.element_info, self)
+        self.table_model = MyTableModel(self.tree_model.props_dict.get(data), self)
         self.table_view.wordWrap()
         self.table_view.setModel(self.table_model)
         self.table_view.setColumnWidth(1, 320)
@@ -70,9 +69,9 @@ class MyTreeModel(QStandardItemModel):
         QStandardItemModel.__init__(self)
         root_node = self.invisibleRootItem()
         self.props_dict = {}
+        self.backend = backend
         self.branch = QStandardItem(self.__node_name(element_info))
         self.branch.setEditable(False)
-        self.backend = backend
         root_node.appendRow(self.branch)
         self.__generate_props_dict(element_info)
         self.__get_next(element_info, self.branch)
@@ -85,9 +84,10 @@ class MyTreeModel(QStandardItemModel):
             parent.appendRow(child_item)
             self.__get_next(child, child_item)
 
-    @staticmethod
-    def __node_name(element_info):
-        return '%s_%s' % (str(element_info.name), id(element_info))
+    def __node_name(self, element_info):
+        if 'uia' == self.backend:
+            return '%s "%s" (%s)' % (str(element_info.control_type), str(element_info.name), id(element_info))
+        return '"%s" (%s)' % (str(element_info.name), id(element_info))
 
     def __generate_props_dict(self, element_info):
         props = [
@@ -119,7 +119,7 @@ class MyTreeModel(QStandardItemModel):
 
 
 class MyTableModel(QAbstractTableModel):
-    def __init__(self, datain, element_info, parent=None, *args):
+    def __init__(self, datain, parent=None, *args):
         QAbstractTableModel.__init__(self, parent, *args)
         self.arraydata = datain
         self.header_labels = ['Property', 'Value']

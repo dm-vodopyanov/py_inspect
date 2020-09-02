@@ -1,4 +1,8 @@
 import sys
+import warnings
+
+warnings.simplefilter("ignore", UserWarning)
+sys.coinit_flags = 2
 
 from pywinauto import backend
 
@@ -9,23 +13,31 @@ from PyQt5.QtWidgets import *
 
 def main():
     app = QApplication(sys.argv)
+    app.setStyle('Fusion')
+
     w = MyWindow()
     w.show()
     sys.exit(app.exec_())
 
 
 class MyWindow(QWidget):
-    def __init__(self, *args):
-        QWidget.__init__(self, *args)
+    def __init__(self):
+        super(MyWindow, self).__init__()
 
-        self.setFixedSize(930, 631)
+        self.setMinimumSize(1000,1000)
         self.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
         self.setWindowTitle(QCoreApplication.translate("MainWindow", "PyInspect"))
 
-        self.central_widget = QWidget(self)
+        self.settings = QSettings('py_inspect', 'MainWindow')
+        
+        # Main layout
+        self.mainLayout = QGridLayout()
 
-        self.comboBox = QComboBox(self.central_widget)
-        self.comboBox.setGeometry(QRect(10, 10, 451, 22))
+        # Backend label
+        self.backendLabel = QLabel("Backend Type")
+
+        # Backend combobox
+        self.comboBox = QComboBox()
         self.comboBox.setMouseTracking(False)
         self.comboBox.setMaxVisibleItems(5)
         self.comboBox.setObjectName("comboBox")
@@ -33,17 +45,28 @@ class MyWindow(QWidget):
         for _backend in backend.registry.backends.keys():
             self.comboBox.addItem(_backend)
 
-        self.tree_view = QTreeView(self.central_widget)
-        self.tree_view.setGeometry(QRect(10, 40, 451, 581))
+        # Add top widgets to main window
+        self.mainLayout.addWidget(self.backendLabel, 0, 0, 1, 1)
+        self.mainLayout.addWidget(self.comboBox, 0, 1, 1, 1)
+
+        self.tree_view = QTreeView()
         self.tree_view.setColumnWidth(0, 150)
 
         self.comboBox.setCurrentText('uia')
         self.__initialize_calc()
 
-        self.table_view = QTableView(self.central_widget)
-        self.table_view.setGeometry(QRect(470, 40, 451, 581))
-
+        self.table_view = QTableView()
+        
         self.comboBox.activated[str].connect(self.__show_tree)
+
+        # Add center widgets to main window
+        self.mainLayout.addWidget(self.tree_view, 1, 0, 1, 1)
+        self.mainLayout.addWidget(self.table_view, 1, 1, 1, 1)
+
+        self.setLayout(self.mainLayout)
+        geometry = self.settings.value('Geometry', bytes('', 'utf-8'))
+        self.restoreGeometry(geometry)
+
 
     def __initialize_calc(self, _backend='uia'):
         self.element_info = backend.registry.backends[_backend].element_info_class()
@@ -62,7 +85,11 @@ class MyWindow(QWidget):
         self.table_view.wordWrap()
         self.table_view.setModel(self.table_model)
         self.table_view.setColumnWidth(1, 320)
-
+    
+    def closeEvent(self, event):
+        geometry = self.saveGeometry()
+        self.settings.setValue('Geometry', geometry)
+        super(MyWindow, self).closeEvent(event)
 
 class MyTreeModel(QStandardItemModel):
     def __init__(self, element_info, backend):
@@ -106,6 +133,7 @@ class MyTreeModel(QStandardItemModel):
                       ] if (self.backend == 'win32') else []
 
         props_uia = [
+                        ['automation_id', str(element_info.automation_id)],
                         ['control_type', str(element_info.control_type)],
                         ['element', str(element_info.element)],
                         ['framework_id', str(element_info.framework_id)],

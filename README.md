@@ -1,4 +1,6 @@
-## PyInspect
+## PyInspect  
+
+### NOTE: this repo is not supported any more. Please submit patches and issues to officially supported repo: https://github.com/pywinauto/py_inspect. Thanks!
 
 **Dmitry Vodopyanov, Alexander Smirnov**  
 *Lobachevsky University, Nizhny Novgorod, Russia*
